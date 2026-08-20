@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Booking - Itinerario</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <style>
+    html,body { height:100%; margin:0; font-family:Arial,Helvetica,sans-serif; }
+    .container { display:flex; height:100vh; }
+    .panel { padding:18px; box-sizing:border-box; }
+    .left { width:360px; background:#f7f7f8; border-right:1px solid #e0e0e0; overflow:auto; }
+    .right { flex:1; }
+    h2 { margin-top:0; }
+    form label { display:block; margin:10px 0; font-size:14px; }
+    form input, form select { width:100%; padding:8px; font-size:14px; margin-top:6px; }
+    form button { margin-top:12px; padding:10px 14px; font-size:14px; background:#2E86AB; color:#fff; border:none; cursor:pointer; }
+    #map { width:100%; height:100%; }
+    #itineraries { list-style:none; padding:0; margin:12px 0 0 0; }
+    #itineraries li { background:#fff; padding:8px; margin-bottom:8px; border-radius:4px; box-shadow:0 1px 0 rgba(0,0,0,0.03); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <aside class="panel left">
+      <h2>Crear Itinerario</h2>
+      <form id="itinerario-form">
+        <label> Aeropuerto de salida
+          <input type="text" name="salida" placeholder="Ej: El Dorado - BOG" required>
+        </label>
+        <label> Aeropuerto de llegada
+          <input type="text" name="llegada" placeholder="Ej: José María Córdova - MDE" required>
+        </label>
+        <label> Intensidad horaria
+          <select name="intensidad">
+            <option value="baja">Baja</option>
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+          </select>
+        </label>
+        <button type="submit">Agregar itinerario</button>
+      </form>
+
+      <h3>Itinerarios</h3>
+      <ul id="itineraries"></ul>
+    </aside>
+
+    <main class="panel right">
+      <div id="map"></div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="pluffy.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if(window.pluffy && typeof window.pluffy.initMap === 'function') {
+        window.pluffy.initMap('map');
+      }
+
+      const form = document.getElementById('itinerario-form');
+      const list = document.getElementById('itineraries');
+
+      form.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const salida = form.salida.value.trim();
+        const llegada = form.llegada.value.trim();
+        const intensidad = form.intensidad.value;
+
+        const li = document.createElement('li');
+        li.textContent = `${salida} → ${llegada} — Intensidad: ${intensidad}`;
+        list.prepend(li);
+
+        form.reset();
+      });
+    });
+  </script>
+</body>
+</html>
