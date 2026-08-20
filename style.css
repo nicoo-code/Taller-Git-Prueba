@@ -1,0 +1,37 @@
+(/* Modernized styles for the booking page */)
+:root{
+	--bg: #0f1724; /* not used for panel, but available */
+	--panel-bg: #ffffff;
+	--muted: #6b7280;
+	--accent: #0066cc;
+	--glass: rgba(255,255,255,0.06);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f3f6fb;color:#0b1220}
+.container{display:flex;height:100vh;gap:18px}
+.panel{padding:20px}
+.left{width:380px;background:linear-gradient(180deg,#ffffff,#f7f9fc);border-radius:12px;margin:18px;box-shadow:0 10px 30px rgba(15,23,36,0.06);overflow:auto}
+.right{flex:1;margin:18px;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,36,0.06)}
+h2{margin:0 0 12px 0;font-size:20px;color:#06122b}
+h3{margin:18px 0 8px 0;color:var(--muted);font-weight:600}
+form label{display:block;margin:12px 0;font-size:13px;color:#334155}
+input[type="text"],select{width:100%;padding:12px;border-radius:10px;border:1px solid #e6eef6;background:#fff;font-size:14px}
+button{display:inline-block;padding:10px 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+button:hover{filter:brightness(0.95)}
+#map{width:100%;height:calc(100vh - 36px);border-radius:12px}
+#itineraries{list-style:none;padding:0;margin:12px 0 0 0}
+#itineraries li{background:linear-gradient(180deg,#ffffff,#fbfdff);padding:12px;margin-bottom:10px;border-radius:10px;box-shadow:0 4px 10px rgba(2,6,23,0.04);font-size:14px}
+
+/* Form header / compact info */
+.meta{display:flex;align-items:center;gap:10px}
+.logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#2e9bd8);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+
+/* Responsive */
+@media (max-width:900px){
+	.container{flex-direction:column}
+	.left{width:auto;margin:12px}
+	.right{margin:12px}
+	#map{height:50vh}
+}
+
