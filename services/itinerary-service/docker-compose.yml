@@ -1,0 +1,46 @@
+services:
+  itinerary-service:
+    build:
+      context: ../..
+      dockerfile: services/itinerary-service/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - DATABASE_URL=postgresql://itinerary_user:itinerary_pass@postgres-itinerary:5432/itinerary_db
+      - AIRPORT_SERVICE_URL=http://airport-service:8001
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - LOG_LEVEL=INFO
+    depends_on:
+      - postgres-itinerary
+      - rabbitmq
+    networks:
+      - itinerary-net
+
+  postgres-itinerary:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=itinerary_user
+      - POSTGRES_PASSWORD=itinerary_pass
+      - POSTGRES_DB=itinerary_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-itinerary:/var/lib/postgresql/data
+    networks:
+      - itinerary-net
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - itinerary-net
+
+volumes:
+  pgdata-itinerary:
+
+networks:
+  itinerary-net:
+    driver: bridge

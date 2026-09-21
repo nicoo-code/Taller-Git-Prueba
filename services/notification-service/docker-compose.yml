@@ -1,0 +1,18 @@
+services:
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - NOTIFICATIONS_DB_PATH=notifications.db
+      - LOG_LEVEL=INFO
+    networks:
+      - notif-net
+
+networks:
+  notif-net:
+    driver: bridge
