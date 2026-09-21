@@ -1,7 +1,13 @@
-import pytest
 import asyncio
 import time
-from src.infrastructure.adapters.circuit_breaker import CircuitBreaker, CircuitState, CircuitBreakerOpenException
+
+import pytest
+from src.infrastructure.adapters.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerOpenException,
+    CircuitState,
+)
+
 
 @pytest.mark.asyncio
 async def test_circuit_breaker_starts_closed():
@@ -15,6 +21,7 @@ async def test_circuit_breaker_starts_closed():
     res = await cb.call(successful_call)
     assert res == "success"
     assert cb.state == CircuitState.CLOSED
+
 
 @pytest.mark.asyncio
 async def test_circuit_breaker_trips_to_open_after_threshold_failures():
@@ -40,6 +47,7 @@ async def test_circuit_breaker_trips_to_open_after_threshold_failures():
     with pytest.raises(CircuitBreakerOpenException):
         await cb.call(failing_call)
 
+
 @pytest.mark.asyncio
 async def test_circuit_breaker_uses_fallback_when_open():
     cb = CircuitBreaker(failure_threshold=2, recovery_timeout=1.0)
@@ -64,6 +72,7 @@ async def test_circuit_breaker_uses_fallback_when_open():
 
     assert res == "cached_fallback_data"
     assert duration < 0.05  # Fail-fast en menos de 50ms
+
 
 @pytest.mark.asyncio
 async def test_circuit_breaker_transitions_to_half_open_and_resets():

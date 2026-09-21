@@ -1,9 +1,10 @@
-import json
 import logging
-from typing import Dict, Any
+from typing import Any
+
 from src.storage.notification_repository import NotificationRepository
 
 logger = logging.getLogger("notification-function")
+
 
 class SendNotificationFunction:
     """
@@ -14,7 +15,7 @@ class SendNotificationFunction:
     def __init__(self, repo: NotificationRepository):
         self.repo = repo
 
-    async def execute(self, event_data: Dict[str, Any]) -> bool:
+    async def execute(self, event_data: dict[str, Any]) -> bool:
         """Punto de entrada de ejecución de la función sin servidor."""
         event_id = event_data.get("event_id")
         event_type = event_data.get("event_type")
@@ -41,7 +42,7 @@ class SendNotificationFunction:
 
         logger.info(
             f"[FaaS] Dispatching simulated email notification to '{user_name}': {message}",
-            extra={"trace_id": trace_id}
+            extra={"trace_id": trace_id},
         )
 
         # Almacenar en auditoría
@@ -51,7 +52,7 @@ class SendNotificationFunction:
             recipient=user_name,
             channel="EMAIL",
             message=message,
-            status="SENT"
+            status="SENT",
         )
 
         return saved

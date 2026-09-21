@@ -1,14 +1,16 @@
-import pytest
 import uuid
-import os
-from src.storage.notification_repository import NotificationRepository
-from src.functions.send_notification_function import SendNotificationFunction
+
+import pytest
 from src.functions.generate_report_function import GenerateReportFunction
+from src.functions.send_notification_function import SendNotificationFunction
+from src.storage.notification_repository import NotificationRepository
+
 
 @pytest.fixture
 def temp_db(tmp_path):
     db_file = str(tmp_path / "test_notifications.db")
     return db_file
+
 
 @pytest.mark.asyncio
 async def test_send_notification_function_and_idempotency(temp_db):
@@ -27,8 +29,8 @@ async def test_send_notification_function_and_idempotency(temp_db):
             "origin_airport_id": 1,
             "destination_airport_id": 12,
             "departure_date": "2026-11-01T10:00:00Z",
-            "duration_minutes": 75
-        }
+            "duration_minutes": 75,
+        },
     }
 
     # 1. Primer despacho debe tener éxito
@@ -46,6 +48,7 @@ async def test_send_notification_function_and_idempotency(temp_db):
     duplicate_success = await func.execute(event_payload)
     assert duplicate_success is False
     assert len(repo.list_all()) == 1
+
 
 def test_generate_report_function(temp_db):
     repo = NotificationRepository(db_path=temp_db)

@@ -1,7 +1,9 @@
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from src.infrastructure.adapters.api_colombia_adapter import ApiColombiaAdapter, FALLBACK_AIRPORTS_DATA
 from src.domain.models.airport import Airport
+from src.infrastructure.adapters.api_colombia_adapter import (
+    ApiColombiaAdapter,
+)
+
 
 def test_map_raw_json_to_domain():
     adapter = ApiColombiaAdapter()
@@ -13,7 +15,7 @@ def test_map_raw_json_to_domain():
         "department": {"name": "Huila"},
         "latitude": 2.9501,
         "longitude": -75.2941,
-        "type": "Nacional"
+        "type": "Nacional",
     }
 
     airport = adapter._map_to_domain(raw_external)
@@ -27,6 +29,7 @@ def test_map_raw_json_to_domain():
     assert airport.longitude == -75.2941
     assert airport.type == "Nacional"
 
+
 def test_map_raw_json_with_flat_strings():
     adapter = ApiColombiaAdapter()
     raw_flat = {
@@ -37,7 +40,7 @@ def test_map_raw_json_with_flat_strings():
         "department": "Caldas",
         "latitude": 5.0297,
         "longitude": -75.4655,
-        "type": "Nacional"
+        "type": "Nacional",
     }
 
     airport = adapter._map_to_domain(raw_flat)
@@ -46,9 +49,12 @@ def test_map_raw_json_with_flat_strings():
     assert airport.department == "Caldas"
     assert airport.iata_code == "MZL"
 
+
 @pytest.mark.asyncio
 async def test_get_all_airports_returns_fallback_on_network_error():
-    adapter = ApiColombiaAdapter(base_url="http://invalid-host-unreachable:9999", max_retries=1)
+    adapter = ApiColombiaAdapter(
+        base_url="http://invalid-host-unreachable:9999", max_retries=1
+    )
 
     # Debe retornar la lista canónica de fallback sin lanzar excepción no controlada
     airports = await adapter.get_all_airports()
@@ -56,9 +62,12 @@ async def test_get_all_airports_returns_fallback_on_network_error():
     assert any(a.iata_code == "BOG" for a in airports)
     assert any(a.iata_code == "MDE" for a in airports)
 
+
 @pytest.mark.asyncio
 async def test_get_airport_by_id_returns_fallback():
-    adapter = ApiColombiaAdapter(base_url="http://invalid-host-unreachable:9999", max_retries=1)
+    adapter = ApiColombiaAdapter(
+        base_url="http://invalid-host-unreachable:9999", max_retries=1
+    )
     airport = await adapter.get_airport_by_id(1)
     assert airport is not None
     assert airport.id == 1

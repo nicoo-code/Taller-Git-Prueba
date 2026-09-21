@@ -1,21 +1,27 @@
-import os
-import time
-import logging
-import sys
 import json
+import logging
+import os
+import sys
+import time
 from collections import defaultdict
-from fastapi import FastAPI, Request, Response, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+
 import httpx
+from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 # Variables de entorno
 PORT = int(os.getenv("PORT", "8000"))
 AIRPORT_SERVICE_URL = os.getenv("AIRPORT_SERVICE_URL", "http://airport-service:8001")
-ITINERARY_SERVICE_URL = os.getenv("ITINERARY_SERVICE_URL", "http://itinerary-service:8002")
-NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://notification-service:8003")
+ITINERARY_SERVICE_URL = os.getenv(
+    "ITINERARY_SERVICE_URL", "http://itinerary-service:8002"
+)
+NOTIFICATION_SERVICE_URL = os.getenv(
+    "NOTIFICATION_SERVICE_URL", "http://notification-service:8003"
+)
 FRONTEND_DIR = os.getenv("FRONTEND_DIR", "/app/frontend")
+
 
 # Logging Estructurado JSON
 class JsonFormatter(logging.Formatter):
@@ -26,9 +32,10 @@ class JsonFormatter(logging.Formatter):
             "service": "api-gateway",
             "message": record.getMessage(),
             "module": record.module,
-            "trace_id": getattr(record, "trace_id", "00000000000000000000000000000000")
+            "trace_id": getattr(record, "trace_id", "00000000000000000000000000000000"),
         }
         return json.dumps(log_record)
+
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(JsonFormatter())
@@ -38,7 +45,7 @@ logger = logging.getLogger("api-gateway")
 app = FastAPI(
     title="API Gateway / BFF - Perímetro del Sistema",
     description="Punto único de entrada del sistema. Enrutamiento, Rate Limiting y Propagación de Seguridad JWT y Tracing.",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 app.add_middleware(
@@ -54,6 +61,7 @@ RATE_LIMIT_MAX = 60
 RATE_LIMIT_WINDOW = 60.0
 request_counters = defaultdict(list)
 
+
 @app.middleware("http")
 async def rate_limit_and_tracing_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
@@ -68,9 +76,11 @@ async def rate_limit_and_tracing_middleware(request: Request, call_next):
     if len(timestamps) >= RATE_LIMIT_MAX:
         logger.warning(f"Rate limit exceeded for IP: {client_ip}")
         return Response(
-            content=json.dumps({"detail": "Too Many Requests (Rate limit: 60 req/min)"}),
+            content=json.dumps(
+                {"detail": "Too Many Requests (Rate limit: 60 req/min)"}
+            ),
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            media_type="application/json"
+            media_type="application/json",
         )
 
     timestamps.append(now)
@@ -93,6 +103,7 @@ async def rate_limit_and_tracing_middleware(request: Request, call_next):
     response.headers["traceparent"] = traceparent
     return response
 
+
 # Enrutador genérico inverso (Reverse Proxy)
 async def forward_request(target_url: str, request: Request) -> Response:
     body = await request.body()
@@ -113,20 +124,21 @@ async def forward_request(target_url: str, request: Request) -> Response:
                 url=target_url,
                 headers=headers,
                 params=request.query_params,
-                content=body
+                content=body,
             )
             return Response(
                 content=resp.content,
                 status_code=resp.status_code,
                 headers=dict(resp.headers),
-                media_type=resp.headers.get("content-type")
+                media_type=resp.headers.get("content-type"),
             )
         except httpx.RequestError as exc:
             logger.error(f"Gateway forwarding error to {target_url}: {exc}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Service unavailable upstream: {exc}"
+                detail=f"Service unavailable upstream: {exc}",
             )
+
 
 # Rutas de aeropuertos
 @app.api_route("/api/v1/airports/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
@@ -134,21 +146,27 @@ async def route_airports(path: str, request: Request):
     target = f"{AIRPORT_SERVICE_URL}/api/v1/airports/{path}"
     return await forward_request(target, request)
 
+
 @app.api_route("/api/v1/airports", methods=["GET"])
 async def route_airports_root(request: Request):
     target = f"{AIRPORT_SERVICE_URL}/api/v1/airports"
     return await forward_request(target, request)
 
+
 # Rutas de itinerarios
-@app.api_route("/api/v1/itineraries/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+@app.api_route(
+    "/api/v1/itineraries/{path:path}", methods=["GET", "POST", "PUT", "DELETE"]
+)
 async def route_itineraries(path: str, request: Request):
     target = f"{ITINERARY_SERVICE_URL}/api/v1/itineraries/{path}"
     return await forward_request(target, request)
+
 
 @app.api_route("/api/v1/itineraries", methods=["GET", "POST"])
 async def route_itineraries_root(request: Request):
     target = f"{ITINERARY_SERVICE_URL}/api/v1/itineraries"
     return await forward_request(target, request)
+
 
 # Rutas de notificaciones
 @app.api_route("/api/v1/notifications/{path:path}", methods=["GET"])
@@ -156,14 +174,12 @@ async def route_notifications(path: str, request: Request):
     target = f"{NOTIFICATION_SERVICE_URL}/api/v1/notifications/{path}"
     return await forward_request(target, request)
 
+
 # Healthcheck del Gateway
 @app.get("/health")
 async def health():
-    return {
-        "status": "UP",
-        "service": "api-gateway",
-        "timestamp": time.time()
-    }
+    return {"status": "UP", "service": "api-gateway", "timestamp": time.time()}
+
 
 # Montar frontend estático si existe
 if os.path.exists(FRONTEND_DIR):
@@ -175,15 +191,21 @@ if os.path.exists(FRONTEND_DIR):
         if os.path.exists(index_path):
             return FileResponse(index_path)
         return {"message": "API Gateway running. Frontend index.html not found."}
+
 else:
     # Si corre en modo local fuera del contenedor
-    local_frontend = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../frontend"))
+    local_frontend = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "../../../frontend")
+    )
     if os.path.exists(local_frontend):
         app.mount("/static", StaticFiles(directory=local_frontend), name="static")
+
         @app.get("/")
         async def serve_local_index():
             return FileResponse(os.path.join(local_frontend, "index.html"))
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=PORT)

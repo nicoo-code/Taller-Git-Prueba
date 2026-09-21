@@ -1,5 +1,7 @@
-from typing import Dict, Any
+from typing import Any
+
 from src.storage.notification_repository import NotificationRepository
+
 
 class GenerateReportFunction:
     """Función Serverless ejecutada bajo demanda para consolidar métricas de notificaciones e itinerarios."""
@@ -7,7 +9,7 @@ class GenerateReportFunction:
     def __init__(self, repo: NotificationRepository):
         self.repo = repo
 
-    def execute(self) -> Dict[str, Any]:
+    def execute(self) -> dict[str, Any]:
         logs = self.repo.list_all()
         total_sent = sum(1 for item in logs if item.get("status") == "SENT")
         channels = {}
@@ -19,5 +21,5 @@ class GenerateReportFunction:
             "total_notifications": len(logs),
             "total_sent": total_sent,
             "channels_breakdown": channels,
-            "recent_events": logs[:10]
+            "recent_events": logs[:10],
         }

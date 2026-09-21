@@ -1,11 +1,20 @@
-import pytest
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
-from src.application.create_itinerary import CreateItineraryUseCase, AirportNotFoundException, InvalidItineraryException
-from src.application.get_itinerary import GetItineraryUseCase, ListItinerariesUseCase, DeleteItineraryUseCase
+import pytest
+from src.application.create_itinerary import (
+    AirportNotFoundException,
+    CreateItineraryUseCase,
+    InvalidItineraryException,
+)
+from src.application.get_itinerary import (
+    DeleteItineraryUseCase,
+    GetItineraryUseCase,
+    ListItinerariesUseCase,
+)
 from src.domain.models.itinerary import Itinerary, OutboxEvent
+
 
 @pytest.fixture
 def mock_repo():
@@ -14,24 +23,26 @@ def mock_repo():
     repo.save_with_outbox.side_effect = lambda itin, outbox: itin
     return repo
 
+
 @pytest.fixture
 def mock_validator():
     validator = AsyncMock()
     validator.validate_airport_exists.return_value = True
     return validator
 
+
 @pytest.mark.asyncio
 async def test_create_itinerary_success(mock_repo, mock_validator):
     use_case = CreateItineraryUseCase(mock_repo, mock_validator)
 
-    departure = datetime.utcnow()
+    departure = datetime.now(UTC)
     itinerary = await use_case.execute(
         user_name="Carlos Gomez",
         origin_airport_id=1,
         destination_airport_id=5,
         departure_date=departure,
         duration_minutes=60,
-        trace_id="test-trace-12345"
+        trace_id="test-trace-12345",
     )
 
     assert itinerary is not None
@@ -54,6 +65,7 @@ async def test_create_itinerary_success(mock_repo, mock_validator):
     assert passed_outbox.status == "PENDING"
     assert passed_outbox.payload["data"]["user_name"] == "Carlos Gomez"
 
+
 @pytest.mark.asyncio
 async def test_create_itinerary_fails_same_airports(mock_repo, mock_validator):
     use_case = CreateItineraryUseCase(mock_repo, mock_validator)
@@ -63,17 +75,18 @@ async def test_create_itinerary_fails_same_airports(mock_repo, mock_validator):
             user_name="Ana Lopez",
             origin_airport_id=1,
             destination_airport_id=1,
-            departure_date=datetime.utcnow(),
-            duration_minutes=45
+            departure_date=datetime.now(UTC),
+            duration_minutes=45,
         )
 
     # No debió guardar nada en base de datos
     mock_repo.save_with_outbox.assert_not_called()
 
+
 @pytest.mark.asyncio
 async def test_create_itinerary_fails_origin_not_found(mock_repo, mock_validator):
     # Simular que el aeropuerto de origen no existe
-    mock_validator.validate_airport_exists.side_effect = lambda aid: False if aid == 999 else True
+    mock_validator.validate_airport_exists.side_effect = lambda aid: aid != 999
     use_case = CreateItineraryUseCase(mock_repo, mock_validator)
 
     with pytest.raises(AirportNotFoundException) as excinfo:
@@ -81,12 +94,13 @@ async def test_create_itinerary_fails_origin_not_found(mock_repo, mock_validator
             user_name="Pedro Pascal",
             origin_airport_id=999,
             destination_airport_id=5,
-            departure_date=datetime.utcnow(),
-            duration_minutes=50
+            departure_date=datetime.now(UTC),
+            duration_minutes=50,
         )
 
     assert "999" in str(excinfo.value)
     mock_repo.save_with_outbox.assert_not_called()
+
 
 @pytest.mark.asyncio
 async def test_get_and_list_itineraries(mock_repo):
@@ -96,8 +110,8 @@ async def test_get_and_list_itineraries(mock_repo):
         user_name="Luis",
         origin_airport_id=1,
         destination_airport_id=9,
-        departure_date=datetime.utcnow(),
-        duration_minutes=40
+        departure_date=datetime.now(UTC),
+        duration_minutes=40,
     )
     mock_repo.find_by_id.return_value = dummy_itin
     mock_repo.list_all.return_value = [dummy_itin]

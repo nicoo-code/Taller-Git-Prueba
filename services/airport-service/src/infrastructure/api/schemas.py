@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+
 
 class AirportResponse(BaseModel):
     id: int = Field(..., description="ID único del aeropuerto")
@@ -9,10 +9,13 @@ class AirportResponse(BaseModel):
     department: str = Field(..., description="Departamento de Colombia")
     latitude: float = Field(..., description="Coordenada de latitud")
     longitude: float = Field(..., description="Coordenada de longitud")
-    type: str = Field(..., description="Tipo de terminal (Internacional, Nacional, etc.)")
+    type: str = Field(
+        ..., description="Tipo de terminal (Internacional, Nacional, etc.)"
+    )
 
     class Config:
         from_attributes = True
+
 
 class CircuitBreakerStatusResponse(BaseModel):
     name: str
@@ -21,6 +24,7 @@ class CircuitBreakerStatusResponse(BaseModel):
     failure_threshold: int
     recovery_timeout: float
     last_failure_time: float
+
 
 class HealthCheckResponse(BaseModel):
     status: str

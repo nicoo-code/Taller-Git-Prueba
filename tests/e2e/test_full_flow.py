@@ -1,8 +1,8 @@
-import pytest
-import uuid
-import sys
 import os
-from datetime import datetime
+import sys
+from datetime import UTC, datetime
+
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -12,18 +12,19 @@ sys.path.insert(0, os.path.join(ROOT_DIR, "services/airport-service"))
 sys.path.insert(0, os.path.join(ROOT_DIR, "services/itinerary-service"))
 sys.path.insert(0, os.path.join(ROOT_DIR, "services/notification-service"))
 
+from src.application.create_itinerary import CreateItineraryUseCase
+from src.application.get_airport_by_id import GetAirportByIdUseCase
+from src.application.list_airports import ListAirportsUseCase
+from src.domain.ports.airport_validator_port import AirportValidatorPort
+from src.functions.send_notification_function import SendNotificationFunction
 from src.infrastructure.adapters.api_colombia_adapter import ApiColombiaAdapter
 from src.infrastructure.adapters.redis_cache_adapter import RedisCacheAdapter
-from src.application.list_airports import ListAirportsUseCase
-from src.application.get_airport_by_id import GetAirportByIdUseCase
-
 from src.infrastructure.persistence.models import Base
-from src.infrastructure.persistence.sqlalchemy_itinerary_repo import SqlAlchemyItineraryRepository
-from src.application.create_itinerary import CreateItineraryUseCase
-from src.domain.ports.airport_validator_port import AirportValidatorPort
-
+from src.infrastructure.persistence.sqlalchemy_itinerary_repo import (
+    SqlAlchemyItineraryRepository,
+)
 from src.storage.notification_repository import NotificationRepository
-from src.functions.send_notification_function import SendNotificationFunction
+
 
 class LocalAirportValidator(AirportValidatorPort):
     def __init__(self, airport_uc: GetAirportByIdUseCase):
@@ -33,13 +34,18 @@ class LocalAirportValidator(AirportValidatorPort):
         airport = await self.airport_uc.execute(airport_id)
         return airport is not None
 
+
 @pytest.mark.asyncio
 async def test_full_distributed_flow_e2e(tmp_path):
     # 1. Configurar Airport Service
     cache_adapter = RedisCacheAdapter()
     api_adapter = ApiColombiaAdapter(max_retries=1)
-    list_airports_uc = ListAirportsUseCase(external_port=api_adapter, cache_port=cache_adapter)
-    get_airport_uc = GetAirportByIdUseCase(external_port=api_adapter, list_use_case=list_airports_uc)
+    list_airports_uc = ListAirportsUseCase(
+        external_port=api_adapter, cache_port=cache_adapter
+    )
+    get_airport_uc = GetAirportByIdUseCase(
+        external_port=api_adapter, list_use_case=list_airports_uc
+    )
 
     airports = await list_airports_uc.execute()
     assert len(airports) > 0, "Debe haber aeropuertos en el catálogo"
@@ -54,17 +60,19 @@ async def test_full_distributed_flow_e2e(tmp_path):
     itinerary_repo = SqlAlchemyItineraryRepository(session_factory=SessionFactory)
 
     validator = LocalAirportValidator(get_airport_uc)
-    create_itin_uc = CreateItineraryUseCase(itinerary_repo=itinerary_repo, airport_validator=validator)
+    create_itin_uc = CreateItineraryUseCase(
+        itinerary_repo=itinerary_repo, airport_validator=validator
+    )
 
     # 3. Crear Itinerario (Validación síncrona + Transacción Atómica Outbox)
-    departure_time = datetime.utcnow()
+    departure_time = datetime.now(UTC)
     new_itinerary = await create_itin_uc.execute(
         user_name="Usuario E2E",
         origin_airport_id=origin.id,
         destination_airport_id=dest.id,
         departure_date=departure_time,
         duration_minutes=50,
-        trace_id="trace-e2e-12345"
+        trace_id="trace-e2e-12345",
     )
 
     assert new_itinerary.id is not None
@@ -73,7 +81,9 @@ async def test_full_distributed_flow_e2e(tmp_path):
     # 4. Verificar que en la BD relacional se creó el evento PENDING en outbox_events
     pending_events = await itinerary_repo.get_pending_events(limit=10)
     assert len(pending_events) >= 1
-    event = next(e for e in pending_events if str(e.aggregate_id) == str(new_itinerary.id))
+    event = next(
+        e for e in pending_events if str(e.aggregate_id) == str(new_itinerary.id)
+    )
     assert event.status == "PENDING"
     assert event.event_type == "ItineraryCreatedEvent"
 

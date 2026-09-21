@@ -1,9 +1,11 @@
 import asyncio
 import logging
+
 from src.domain.ports.outbox_repository_port import OutboxRepositoryPort
 from src.infrastructure.messaging.rabbitmq_publisher import RabbitMQPublisher
 
 logger = logging.getLogger(__name__)
+
 
 class OutboxRelayWorker:
     """
@@ -16,7 +18,7 @@ class OutboxRelayWorker:
         self,
         outbox_repo: OutboxRepositoryPort,
         publisher: RabbitMQPublisher,
-        poll_interval_seconds: float = 1.0
+        poll_interval_seconds: float = 1.0,
     ):
         self.outbox_repo = outbox_repo
         self.publisher = publisher
@@ -36,8 +38,7 @@ class OutboxRelayWorker:
                 for event in pending_events:
                     # 2. Publicar en RabbitMQ
                     success = await self.publisher.publish_event(
-                        payload=event.payload,
-                        routing_key="itinerary.created"
+                        payload=event.payload, routing_key="itinerary.created"
                     )
 
                     # 3. Actualizar estado en la base de datos
@@ -46,9 +47,11 @@ class OutboxRelayWorker:
                         logger.info(f"Outbox event {event.id} marked as PUBLISHED.")
                     else:
                         await self.outbox_repo.mark_as_failed(event.id)
-                        logger.warning(f"Outbox event {event.id} failed to publish, marked for retry.")
+                        logger.warning(
+                            f"Outbox event {event.id} failed to publish, marked for retry."
+                        )
 
-            except Exception as e:
+            except (RuntimeError, OSError, ValueError, KeyError, TypeError) as e:
                 logger.error(f"Error in OutboxRelayWorker execution loop: {e}")
 
             # Esperar antes del siguiente sondeo

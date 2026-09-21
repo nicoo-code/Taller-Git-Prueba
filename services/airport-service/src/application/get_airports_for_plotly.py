@@ -1,5 +1,7 @@
-from typing import Dict, Any
+from typing import Any
+
 from src.application.list_airports import ListAirportsUseCase
+
 
 class GetAirportsForPlotlyUseCase:
     """Caso de uso para transformar la lista de aeropuertos de dominio al formato específico de Plotly JS."""
@@ -8,6 +10,6 @@ class GetAirportsForPlotlyUseCase:
         self._list_use_case = list_use_case
         self._plotly_adapter = plotly_adapter
 
-    async def execute(self) -> Dict[str, Any]:
+    async def execute(self) -> dict[str, Any]:
         airports = await self._list_use_case.execute()
         return self._plotly_adapter.format_for_scattergeo(airports)

@@ -1,9 +1,11 @@
-from dataclasses import dataclass, asdict
-from typing import Optional, Dict, Any
+from dataclasses import asdict, dataclass
+from typing import Any
+
 
 @dataclass(frozen=True)
 class Airport:
     """Entidad pura del dominio para representar un aeropuerto en el catálogo canónico."""
+
     id: int
     name: str
     iata_code: str
@@ -13,5 +15,5 @@ class Airport:
     longitude: float
     type: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)

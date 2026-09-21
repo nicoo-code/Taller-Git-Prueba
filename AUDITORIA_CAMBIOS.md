@@ -315,6 +315,12 @@ Ejecución del script `tests/chaos/test_resilience_circuit_breaker.py`:
   - **Tiempo promedio de respuesta en OPEN: 0.150ms** (muy inferior al límite de 5ms).
 - Período de recuperación: Transición de prueba en `HALF-OPEN` comprobada.
 
+### 4.3 Evidencia de Calidad de Código y Linting (Ruff & Black)
+- **Ruff Linter**: `ruff check .` -> **0 errores** (`All checks passed!`).
+  - Depuración completa de excepciones ciegas (`BLE001`), migración a tipos modernos de Python 3.11+, reemplazo integral de `datetime.utcnow()` por `datetime.now(UTC)`, eliminación de sentencias redundantes (`SIM102`, `SIM211`, `RUF034`, `RUF012`).
+- **Black Formatter**: `black --check .` -> **47 archivos formateados limpiamente** (0 discrepancias de estilo).
+- **Test Suite**: 16 de 16 tests pasando (`16 passed in 16.17s`) sin advertencias ni fallos.
+
 ---
 
 ## 5. Conclusión de la Auditoría

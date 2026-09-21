@@ -1,10 +1,12 @@
-from typing import List, Dict, Any
+from typing import Any
+
 from src.domain.models.airport import Airport
+
 
 class PlotlyAdapter:
     """Adaptador de infraestructura que traduce modelos de dominio a la estructura requerida por Plotly JS Scattergeo."""
 
-    def format_for_scattergeo(self, airports: List[Airport]) -> Dict[str, Any]:
+    def format_for_scattergeo(self, airports: list[Airport]) -> dict[str, Any]:
         lats = []
         lons = []
         texts = []
@@ -17,7 +19,9 @@ class PlotlyAdapter:
                 lats.append(a.latitude)
                 lons.append(a.longitude)
                 texts.append(f"{a.iata_code}")
-                hover_texts.append(f"<b>{a.name}</b><br>IATA: {a.iata_code}<br>Ciudad: {a.city} ({a.department})<br>Tipo: {a.type}")
+                hover_texts.append(
+                    f"<b>{a.name}</b><br>IATA: {a.iata_code}<br>Ciudad: {a.city} ({a.department})<br>Tipo: {a.type}"
+                )
                 ids.append(a.id)
 
         scattergeo_trace = {
@@ -34,17 +38,14 @@ class PlotlyAdapter:
                 "size": 10,
                 "color": "#0284c7",
                 "symbol": "circle",
-                "line": {
-                    "width": 1.5,
-                    "color": "#ffffff"
-                }
-            }
+                "line": {"width": 1.5, "color": "#ffffff"},
+            },
         }
 
         layout = {
             "title": {
                 "text": "Red Nacional e Internacional de Aeropuertos de Colombia",
-                "font": {"size": 18, "color": "#0f172a"}
+                "font": {"size": 18, "color": "#0f172a"},
             },
             "showlegend": False,
             "geo": {
@@ -56,21 +57,11 @@ class PlotlyAdapter:
                 "coastlinecolor": "#94a3b8",
                 "showsubunits": True,
                 "subunitcolor": "#e2e8f0",
-                "center": {
-                    "lat": 4.5709,
-                    "lon": -74.2973
-                },
-                "projection": {
-                    "type": "mercator",
-                    "scale": 4.5
-                }
+                "center": {"lat": 4.5709, "lon": -74.2973},
+                "projection": {"type": "mercator", "scale": 4.5},
             },
             "margin": {"l": 0, "r": 0, "t": 40, "b": 0},
-            "autosize": True
+            "autosize": True,
         }
 
-        return {
-            "data": [scattergeo_trace],
-            "layout": layout,
-            "count": len(ids)
-        }
+        return {"data": [scattergeo_trace], "layout": layout, "count": len(ids)}

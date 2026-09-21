@@ -1,12 +1,19 @@
 import uuid
-from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, Text, JSON
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Column, DateTime, Integer, String
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
+
+def _get_utc_now():
+    return datetime.now(UTC)
+
+
 class ItineraryModel(Base):
     """Modelo ORM para la tabla de itinerarios."""
+
     __tablename__ = "itineraries"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -16,11 +23,15 @@ class ItineraryModel(Base):
     departure_date = Column(DateTime, nullable=False)
     duration_minutes = Column(Integer, nullable=False)
     status = Column(String(20), nullable=False, default="CREATED")
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=_get_utc_now)
+    updated_at = Column(
+        DateTime, nullable=False, default=_get_utc_now, onupdate=_get_utc_now
+    )
+
 
 class OutboxEventModel(Base):
     """Modelo ORM para la tabla de eventos de integración del Transactional Outbox."""
+
     __tablename__ = "outbox_events"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -28,7 +39,9 @@ class OutboxEventModel(Base):
     aggregate_id = Column(String(36), nullable=False)
     event_type = Column(String(100), nullable=False)
     payload = Column(JSON, nullable=False)
-    status = Column(String(20), nullable=False, default="PENDING")  # PENDING, PUBLISHED, FAILED
+    status = Column(
+        String(20), nullable=False, default="PENDING"
+    )  # PENDING, PUBLISHED, FAILED
     retry_count = Column(Integer, nullable=False, default=0)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=_get_utc_now)
     processed_at = Column(DateTime, nullable=True)
