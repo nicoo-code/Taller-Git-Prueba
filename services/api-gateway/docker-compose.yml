@@ -1,0 +1,18 @@
+services:
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: services/api-gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AIRPORT_SERVICE_URL=http://airport-service:8001
+      - ITINERARY_SERVICE_URL=http://itinerary-service:8002
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8003
+    networks:
+      - gateway-net
+
+networks:
+  gateway-net:
+    driver: bridge

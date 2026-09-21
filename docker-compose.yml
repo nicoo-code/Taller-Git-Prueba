@@ -1,0 +1,198 @@
+services:
+  # ==========================================
+  # 1. API GATEWAY / REVERSE PROXY (PERÍMETRO)
+  # ==========================================
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AIRPORT_SERVICE_URL=http://airport-service:8001
+      - ITINERARY_SERVICE_URL=http://itinerary-service:8002
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8003
+      - FRONTEND_DIR=/app/frontend
+      - LOG_LEVEL=INFO
+    depends_on:
+      airport-service:
+        condition: service_started
+      itinerary-service:
+        condition: service_started
+    networks:
+      - frontend-net
+      - backend-net
+
+  # ==========================================
+  # 2. MICROSERVICIO DE AEROPUERTOS
+  # ==========================================
+  airport-service:
+    build:
+      context: .
+      dockerfile: ./services/airport-service/Dockerfile
+    container_name: airport-service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - API_COLOMBIA_URL=https://api-colombia.com/api/v1/Airport
+      - REDIS_URL=redis://redis:6379/0
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - data-net
+
+  # ==========================================
+  # 3. MICROSERVICIO DE ITINERARIOS
+  # ==========================================
+  itinerary-service:
+    build:
+      context: .
+      dockerfile: ./services/itinerary-service/Dockerfile
+    container_name: itinerary-service
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - DATABASE_URL=postgresql://itinerary_user:itinerary_pass@postgres-itinerary:5432/itinerary_db
+      - AIRPORT_SERVICE_URL=http://airport-service:8001
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres-itinerary:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - data-net
+
+  # ==========================================
+  # 4. COMPONENTE SERVERLESS / FaaS NOTIFICACIONES
+  # ==========================================
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./services/notification-service/Dockerfile
+    container_name: notification-service
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - NOTIFICATIONS_DB_PATH=/app/notifications.db
+      - LOG_LEVEL=INFO
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - data-net
+
+  # ==========================================
+  # 5. BASE DE DATOS RELACIONAL POSTGRESQL
+  # ==========================================
+  postgres-itinerary:
+    image: postgres:15-alpine
+    container_name: postgres-itinerary
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=itinerary_user
+      - POSTGRES_PASSWORD=itinerary_pass
+      - POSTGRES_DB=itinerary_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_itinerary_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U itinerary_user -d itinerary_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data-net
+
+  # ==========================================
+  # 6. MEMORIA CACHÉ REDIS
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - data-net
+
+  # ==========================================
+  # 7. BROKER DE MENSAJERÍA RABBITMQ
+  # ==========================================
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data-net
+
+  # ==========================================
+  # 8. OBSERVABILIDAD / JAEGER TRACING
+  # ==========================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    container_name: jaeger
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Web UI
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    networks:
+      - backend-net
+
+# ==========================================
+# REDES AISLADAS
+# ==========================================
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+  data-net:
+    driver: bridge
+
+# ==========================================
+# VOLÚMENES PERSISTENTES
+# ==========================================
+volumes:
+  postgres_itinerary_data:
+  rabbitmq_data:

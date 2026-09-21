@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Pytest & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Databases & local state
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
